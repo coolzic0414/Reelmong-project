@@ -28,7 +28,7 @@ CATEGORY_VOICE_MAP = {
     "피자": "male_friendly",
     "분식": "female_friendly",
     "중식": "male_friendly",
-    "일식": "female_calm",
+    "일식": "male_calm",
     "양식": "female_friendly",
     "베이커리": "female_friendly",
     "마라탕": "female_friendly",
@@ -41,8 +41,9 @@ class TTSGenerator:
 
     def __init__(self, voice_key: str = "female_friendly"):
         self.voice = KOREAN_VOICES.get(voice_key, KOREAN_VOICES["female_friendly"])
-        self.rate = "+0%"    # 발화 속도 (기본)
-        self.volume = "+0%"  # 볼륨 (기본)
+        self.rate   = "+35%"   # 발화 속도
+        self.volume = "+0%"    # 볼륨
+        self.pitch  = "+10Hz"  # 피치
 
     @classmethod
     def for_category(cls, category: str) -> "TTSGenerator":
@@ -79,6 +80,7 @@ class TTSGenerator:
             voice=self.voice,
             rate=self.rate,
             volume=self.volume,
+            pitch=self.pitch,
         )
         await communicate.save(output_path)
         return output_path

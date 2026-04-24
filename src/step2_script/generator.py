@@ -1,12 +1,11 @@
 """STEP 2: 스크립트 생성 모듈
 
 STEP 1 결과 (StoreAnalysis JSON) → Ollama LLM → 30초 릴스 스토리보드
-- 오프닝 후크 (첫 3초 - 시청자 이목 집중)
 - 장면별 나레이션 + 자막
-- 클로징 CTA (행동 유도)
 - BGM 분위기 결정
 """
 import json
+import random
 from pathlib import Path
 
 import requests
@@ -103,7 +102,7 @@ class ScriptGenerator:
     def _generate_storyboard(self, analysis: StoreAnalysis) -> dict:
         """Ollama로 스토리보드 JSON 생성"""
         scenes_info = "\n".join(
-            f"  장면{i+1}: [{s.scene_type}] {s.description_ko} (분위기: {s.mood}, 이미지: {s.image_path})"
+            f"  장면{i+1}: [{s.scene_type}] {s.description_ko} / 핵심요소: {', '.join(s.key_elements)} / 분위기: {s.mood}"
             for i, s in enumerate(analysis.scenes)
         )
 
@@ -125,27 +124,33 @@ class ScriptGenerator:
 {scenes_info}
 
 ## 작성 규칙
-1. opening_hook: 첫 3초 안에 시청자를 잡는 강렬한 한 문장 (질문형 또는 감탄형)
-2. 각 장면의 narration: 자연스럽고 감성적인 나레이션 (TTS로 읽힘)
-3. 각 장면의 subtitle: 화면에 표시할 짧은 자막 (나레이션 요약, 10자 이내)
-4. closing_cta: 마지막 행동 유도 문구 (위치, 검색 키워드 등)
-5. bgm_mood: 배경음악 분위기 (energetic, calm, warm, trendy, elegant 중 하나)
-6. 장면당 약 {duration_per_scene}초, 전체 {self.target_duration}초 목표
-7. effect: 각 장면 효과 (ken_burns, zoom_in, zoom_out, fade, slide 중 하나)
+1. food_type: 이 매장의 핵심 음식/서비스를 한 줄로 (예: "무한리필 초밥 뷔페", "수제 디저트 카페", "한우 소고기 구이")
+   - 매장명이 아닌 음식 종류+특징으로 작성, 10자 이내
+2. hook_candidates: 첫 장면에 쓸 후킹 멘트 10개 (시청자를 즉시 사로잡는 짧고 강렬한 문장)
+   - 질문형, 감탄형, 충격형 등 다양하게
+   - 반드시 15자 이내
+   - 예시: "이거 진짜 무한이야?", "초밥이 이 가격에?", "여기 알고 있었어?"
+3. 각 장면의 narration: 반드시 해당 장면에 보이는 것(음식, 공간, 분위기 등)을 직접 언급
+   - 장면N의 narration은 반드시 장면N의 핵심요소/묘사를 기반으로 작성
+   - 화면 자막으로도 쓰이므로 반드시 15자 이내 짧고 간결한 한 문장
+   - TTS로 자연스럽게 읽혀야 함
+4. bgm_mood: 배경음악 분위기 (energetic, calm, warm, trendy, elegant 중 하나)
+5. 장면당 약 {duration_per_scene}초, 전체 {self.target_duration}초 목표
 
 아래 JSON 형식으로만 응답하세요. 다른 텍스트 없이 JSON만 출력하세요.
 
 {{
-  "opening_hook": "첫 3초 후크 문구",
+  "food_type": "무한리필 초밥 뷔페",
   "bgm_mood": "warm",
-  "closing_cta": "마지막 CTA 문구",
+  "hook_candidates": [
+    "후킹멘트1", "후킹멘트2", "후킹멘트3", "후킹멘트4", "후킹멘트5",
+    "후킹멘트6", "후킹멘트7", "후킹멘트8", "후킹멘트9", "후킹멘트10"
+  ],
   "scenes": [
     {{
       "scene_index": 1,
-      "narration": "나레이션 텍스트",
-      "subtitle": "짧은 자막",
-      "duration": {duration_per_scene},
-      "effect": "ken_burns"
+      "narration": "15자 이내 짧은 문장",
+      "duration": {duration_per_scene}
     }}
   ]
 }}"""
@@ -167,30 +172,22 @@ class ScriptGenerator:
         scenes = []
         for i, scene in enumerate(analysis.scenes):
             if i == 0:
-                narration = f"{analysis.store_name}을 소개합니다. {analysis.store_intro}"
-                subtitle = analysis.store_name
+                narration = f"{analysis.store_name} 방문해요!"
             elif scene.scene_type == "food":
-                narration = f"정성 가득한 메뉴를 만나보세요. {scene.description_ko}"
-                subtitle = "시그니처 메뉴"
+                narration = "정성 가득한 메뉴!"
             elif scene.scene_type == "interior":
-                narration = f"편안한 공간에서 특별한 시간을 보내세요. {scene.description_ko}"
-                subtitle = "아늑한 공간"
+                narration = "편안한 공간에서"
             else:
-                narration = scene.description_ko or "특별한 경험이 기다립니다."
-                subtitle = "특별한 경험"
+                narration = "특별한 경험!"
 
             scenes.append({
                 "scene_index": i + 1,
                 "narration": narration,
-                "subtitle": subtitle,
                 "duration": duration_per_scene,
-                "effect": "ken_burns",
             })
 
         return {
-            "opening_hook": f"이런 곳 찾고 있었죠? {analysis.store_name}!",
             "bgm_mood": "warm",
-            "closing_cta": f"{analysis.store_name}, 지금 바로 검색해보세요!",
             "scenes": scenes,
         }
 
@@ -210,11 +207,12 @@ class ScriptGenerator:
             # 최소 2초, 최대 8초로 클램핑
             duration = max(2.0, min(8.0, duration))
 
+            narration = raw.get("narration", "")
             scene = SceneScript(
                 scene_index=raw.get("scene_index", i + 1),
                 image_path=image_path,
-                narration=raw.get("narration", ""),
-                subtitle=raw.get("subtitle", ""),
+                narration=narration,
+                subtitle=narration,  # 자막 = 나레이션 동일
                 duration=duration,
                 start_time=current_time,
                 effect=raw.get("effect", "ken_burns"),
@@ -223,21 +221,29 @@ class ScriptGenerator:
             scenes.append(scene)
             current_time += duration
 
+        # 후킹 멘트 처리: 랜덤 선택 → 첫 장면 나레이션으로 교체
+        hook_candidates = data.get("hook_candidates", [])
+        if hook_candidates and scenes:
+            selected_hook = random.choice(hook_candidates)
+            scenes[0].narration = selected_hook
+            scenes[0].subtitle  = selected_hook
+            print(f"[릴몽] 선택된 후킹 멘트: {selected_hook}")
+
         # 전체 나레이션 텍스트 조합 (TTS 입력용)
-        opening = data.get("opening_hook", "")
-        closing = data.get("closing_cta", "")
-        narrations = [opening] + [s.narration for s in scenes] + [closing]
-        full_text = " ".join(n for n in narrations if n)
+        full_text = " ".join(s.narration for s in scenes if s.narration)
+
+        # food_type: LLM이 뽑은 값 우선, 없으면 category로 fallback
+        food_type = data.get("food_type", "").strip() or analysis.category
 
         storyboard = Storyboard(
             store_name=analysis.store_name,
             category=analysis.category,
+            food_type=food_type,
             total_duration=current_time,
-            opening_hook=opening,
             scenes=scenes,
-            closing_cta=closing,
             bgm_mood=data.get("bgm_mood", "warm"),
             script_full_text=full_text,
+            hook_candidates=hook_candidates,
         )
 
         return storyboard

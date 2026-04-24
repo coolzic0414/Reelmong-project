@@ -12,6 +12,7 @@ requests>=2.31.0
 
 # Step 3: Audio (TTS + BGM)
 pydub>=0.25.1
+edge-tts>=6.1.9
 
 # Step 4: Video Rendering
 moviepy>=2.0.0

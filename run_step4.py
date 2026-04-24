@@ -1,9 +1,8 @@
 """STEP 4 실행 스크립트 - 비디오 렌더링
 
-STEP 2 결과(스토리보드) + STEP 3 결과(오디오)를 합성하여 최종 MP4 영상을 생성합니다.
-- 장면별 이미지에 영상 효과(Ken Burns, 줌, 페이드 등) 적용
-- 자막 오버레이
-- 오프닝 후크 + 클로징 CTA 표시
+data/images/ 폴더의 영상 클립(0~9번)을 순서대로 연결하여 최종 MP4를 생성합니다.
+- 영상 클립 순서대로 연결
+- 나레이션 자막 오버레이 (화면 중앙)
 - 최종 오디오(TTS + BGM) 합성
 
 사용법:
@@ -19,36 +18,26 @@ from pathlib import Path
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 sys.path.insert(0, str(Path(__file__).parent))
 
-from config.settings import OUTPUT_DIR, VIDEO_WIDTH, VIDEO_HEIGHT, VIDEO_FPS
-from src.step4_video.renderer import VideoRenderer
+from config.settings import OUTPUT_DIR, IMAGES_DIR, VIDEO_WIDTH, VIDEO_HEIGHT, VIDEO_FPS
+from src.step4_video.renderer import VideoRenderer, _find_video_files
 
 
 def main():
     parser = argparse.ArgumentParser(description="릴몽 STEP 4: 비디오 렌더링")
-    parser.add_argument(
-        "--storyboard",
-        default=str(OUTPUT_DIR / "step2_storyboard.json"),
-        help="STEP 2 스토리보드 JSON 경로",
-    )
-    parser.add_argument(
-        "--audio",
-        default=str(OUTPUT_DIR / "step3_final_audio.mp3"),
-        help="STEP 3 최종 오디오 경로",
-    )
-    parser.add_argument(
-        "--output",
-        default=str(OUTPUT_DIR / "step4_final_video.mp4"),
-        help="출력 비디오 경로",
-    )
+    parser.add_argument("--storyboard", default=str(OUTPUT_DIR / "step2_storyboard.json"))
+    parser.add_argument("--audio",      default=str(OUTPUT_DIR / "step3_final_audio.mp3"))
+    parser.add_argument("--videos",     default=str(IMAGES_DIR))
+    parser.add_argument("--output",     default=str(OUTPUT_DIR / "step4_final_video.mp4"))
     args = parser.parse_args()
 
     storyboard_path = Path(args.storyboard)
-    audio_path = Path(args.audio)
-    output_path = Path(args.output)
+    audio_path      = Path(args.audio)
+    videos_dir      = Path(args.videos)
+    output_path     = Path(args.output)
 
     print("=" * 50)
     print("  릴몽 STEP 4: 비디오 렌더링")
-    print("  (MoviePy 기반 숏폼 영상 생성)")
+    print("  (영상 클립 연결 방식)")
     print("=" * 50)
     print()
 
@@ -62,35 +51,28 @@ def main():
         storyboard = json.load(f)
 
     store_name = storyboard.get("store_name", "")
-    scenes = storyboard.get("scenes", [])
-    total_duration = storyboard.get("total_duration", 30)
+    scenes     = storyboard.get("scenes", [])
 
     print(f"[v] 스토리보드 로드 완료")
     print(f"    매장: {store_name}")
-    print(f"    장면 수: {len(scenes)}개")
-    print(f"    총 길이: {total_duration}초")
+    print(f"    장면(나레이션) 수: {len(scenes)}개")
     print(f"    해상도: {VIDEO_WIDTH}x{VIDEO_HEIGHT} (9:16)")
     print(f"    FPS: {VIDEO_FPS}")
     print()
 
-    # 2) 이미지 파일 확인
-    print("[*] 이미지 파일 확인 중...")
-    valid_scenes = 0
-    for scene in scenes:
-        img_path = scene.get("image_path", "")
-        exists = Path(img_path).exists() if img_path else False
-        status = "v" if exists else "x"
-        effect = scene.get("effect", "ken_burns")
-        print(f"    [{status}] 장면 {scene.get('scene_index', '?')}: {Path(img_path).name if img_path else '없음'} ({effect})")
-        if exists:
-            valid_scenes += 1
+    # 2) 영상 클립 확인
+    print("[*] 영상 클립 확인 중...")
+    video_files = _find_video_files(str(videos_dir))
 
-    if valid_scenes == 0:
-        print()
-        print("[!] 유효한 이미지가 없습니다. data/images/ 폴더에 이미지를 넣어주세요.")
+    if not video_files:
+        print(f"[!] {videos_dir} 에 mp4 파일이 없습니다.")
         return
 
-    print(f"    → 유효 이미지: {valid_scenes}/{len(scenes)}개")
+    for i, vf in enumerate(video_files):
+        narration = scenes[i].get("narration", "(나레이션 없음)") if i < len(scenes) else "(나레이션 없음)"
+        print(f"    [{i}] {vf.name}  →  {narration}")
+
+    print(f"    → 총 {len(video_files)}개 클립")
     print()
 
     # 3) 오디오 확인
@@ -98,25 +80,36 @@ def main():
         print(f"[v] 오디오 파일 확인: {audio_path.name}")
     else:
         print(f"[!] 오디오 파일이 없습니다: {audio_path}")
-        print("    → 먼저 'python run_step3.py'를 실행해주세요.")
         print("    → 오디오 없이 무음 영상으로 렌더링합니다.")
     print()
 
-    # 4) 렌더링
+    # 4) TTS 타이밍 로드
+    tts_durations = None
+    tts_durations_path = OUTPUT_DIR / "step3_tts_durations.json"
+    if tts_durations_path.exists():
+        with open(tts_durations_path, "r", encoding="utf-8") as f:
+            tts_durations = json.load(f)
+        print(f"[v] 클립 타이밍 로드: {len(tts_durations)}개")
+        for i, d in enumerate(tts_durations):
+            print(f"    [{i}] {d:.2f}s")
+        print()
+    else:
+        print("[!] step3_tts_durations.json 없음 → 원본 클립 길이 사용")
+        print()
+
+    # 5) 렌더링
     print("[*] 비디오 렌더링 시작...")
     print(f"    출력: {output_path}")
     print()
 
-    renderer = VideoRenderer(
-        width=VIDEO_WIDTH,
-        height=VIDEO_HEIGHT,
-        fps=VIDEO_FPS,
-    )
+    renderer = VideoRenderer(width=VIDEO_WIDTH, height=VIDEO_HEIGHT, fps=VIDEO_FPS)
 
     result_path = renderer.render(
         storyboard=storyboard,
         audio_path=str(audio_path) if audio_path.exists() else "",
         output_path=str(output_path),
+        videos_dir=str(videos_dir),
+        tts_durations=tts_durations,
     )
 
     if result_path and Path(result_path).exists():
@@ -127,7 +120,7 @@ def main():
         print(f"    → 해상도: {VIDEO_WIDTH}x{VIDEO_HEIGHT}")
         print(f"    → FPS: {VIDEO_FPS}")
         print()
-        print("    다음: STEP 5 (품질 평가)에서 영상 품질을 분석합니다.")
+        print("    다음: python run_step5.py  (제목/태그 추천)")
     else:
         print()
         print("[!] 비디오 렌더링에 실패했습니다.")

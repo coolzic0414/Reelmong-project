@@ -56,10 +56,10 @@ class AudioMixer:
             tts_audio = AudioSegment.from_file(audio_path)
             tts_audio = tts_audio + self.narration_volume_db
 
-            # 나레이션이 장면보다 길면 잘라내기
-            scene_duration_ms = int(scene.get("duration_ms", len(tts_audio)))
-            if len(tts_audio) > scene_duration_ms:
-                tts_audio = tts_audio[:scene_duration_ms]
+            # 나레이션이 캔버스를 넘으면 캔버스 확장
+            needed = start_ms + len(tts_audio)
+            if needed > len(canvas):
+                canvas = canvas + AudioSegment.silent(duration=needed - len(canvas))
 
             canvas = canvas.overlay(tts_audio, position=start_ms)
             narration_regions.append((start_ms, start_ms + len(tts_audio)))

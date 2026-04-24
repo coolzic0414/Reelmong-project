@@ -61,20 +61,23 @@ def main():
     print("  생성된 스토리보드")
     print("=" * 50)
     print()
-    print(f"  오프닝 후크: {storyboard.opening_hook}")
     print(f"  총 길이: {storyboard.total_duration:.1f}초")
     print(f"  BGM 분위기: {storyboard.bgm_mood}")
     print()
 
-    for scene in storyboard.scenes:
-        print(f"  [{scene.scene_index}] {scene.start_time:.1f}s ~ {scene.start_time + scene.duration:.1f}s ({scene.duration:.1f}초)")
-        print(f"      나레이션: {scene.narration}")
-        print(f"      자막: {scene.subtitle}")
-        print(f"      효과: {scene.effect}")
+    if storyboard.hook_candidates:
+        print("  [후킹 멘트 후보 10개]")
+        for i, hook in enumerate(storyboard.hook_candidates, 1):
+            marker = " ← 선택됨" if hook == storyboard.scenes[0].narration else ""
+            print(f"    {i:2}. {hook}{marker}")
         print()
 
-    print(f"  클로징 CTA: {storyboard.closing_cta}")
-    print()
+
+    for scene in storyboard.scenes:
+        print(f"  [{scene.scene_index}] {scene.start_time:.1f}s ~ {scene.start_time + scene.duration:.1f}s ({scene.duration:.1f}초)")
+        print(f"      나레이션/자막: {scene.narration}")
+        print(f"      효과: {scene.effect}")
+        print()
 
     # 4) 결과 저장
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

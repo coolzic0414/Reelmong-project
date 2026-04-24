@@ -25,22 +25,22 @@ class Storyboard:
     store_name: str
     category: str
     total_duration: float                        # 전체 영상 길이 (초)
-    opening_hook: str                            # 오프닝 후크 문구 (첫 3초)
     scenes: list[SceneScript] = field(default_factory=list)
-    closing_cta: str = ""                        # 클로징 CTA (마지막 장면)
     bgm_mood: str = ""                           # BGM 분위기 키워드
     script_full_text: str = ""                   # 전체 나레이션 텍스트 (TTS용)
+    hook_candidates: list[str] = field(default_factory=list)  # 후킹 멘트 후보 10개
+    food_type: str = ""                          # 음식 종류 설명 (예: 무한리필 초밥 뷔페)
 
     def to_dict(self) -> dict:
         return {
             "store_name": self.store_name,
             "category": self.category,
+            "food_type": self.food_type,
             "total_duration": self.total_duration,
-            "opening_hook": self.opening_hook,
             "scenes": [s.to_dict() for s in self.scenes],
-            "closing_cta": self.closing_cta,
             "bgm_mood": self.bgm_mood,
             "script_full_text": self.script_full_text,
+            "hook_candidates": self.hook_candidates,
         }
 
     def to_json(self, indent: int = 2) -> str:
