@@ -109,7 +109,7 @@ class ScriptGenerator:
         num_scenes = len(analysis.scenes)
         duration_per_scene = round(self.target_duration / num_scenes, 1)
 
-        prompt = f"""당신은 F&B 매장 홍보 숏폼 영상의 스크립트 작가입니다.
+        prompt = f"""당신은 MZ세대가 운영하는 맛집 유튜브 채널의 숏폼 스크립트 작가입니다.
 인스타 릴스, 유튜브 쇼츠 스타일의 15~30초 홍보 영상 대본을 작성해주세요.
 
 ## 매장 정보
@@ -123,19 +123,35 @@ class ScriptGenerator:
 ## 이미지 분석 결과 ({num_scenes}개 장면)
 {scenes_info}
 
+## 문체 규칙 (매우 중요)
+- 반드시 요즘 MZ 친근한 말투로 작성. 문장 끝은 반드시 아래 스타일 중 하나로 끝내세요.
+- 말투 스타일: "-해봐", "-했어!", "-잖아!", "-인 거야?", "-실화야?", "-대박이야!", "-이거 봐봐"
+- 절대 금지 말투: "-입니다", "-습니다", "-합니다", "-다", "-군요", "-네요"
+- 이모티콘, 이모지, 특수문자 사용 금지 (😊🔥✨ 등 절대 쓰지 말 것)
+- 후킹: "이거 실화야?", "여기가 맞아?", "어떻게 이 가격에?", "이게 말이 돼?"
+- 감탄: "완전 미쳤어!", "레전드 아니야?", "이거 진짜잖아!", "대박이잖아!"
+- 맛 표현: "너무 맛있어!", "이 맛 실화야?", "입에서 살살 녹아!", "한 입 먹어봐"
+- 공간/분위기: "분위기 미쳤어!", "여기 감성 봐봐", "뭔데 이 감성이야?"
+- 엔딩: "저장해봐!", "팔로우 안 하면 손해야!", "다음에 또 와야겠어!"
+- 절대 쓰면 안 되는 표현: "따뜻한 햇살", "정성 가득", "편안한 공간", "특별한 경험", "아늑한", "여유로운"
+
 ## 작성 규칙
 1. food_type: 이 매장의 핵심 음식/서비스를 한 줄로 (예: "무한리필 초밥 뷔페", "수제 디저트 카페", "한우 소고기 구이")
    - 매장명이 아닌 음식 종류+특징으로 작성, 10자 이내
 2. hook_candidates: 첫 장면에 쓸 후킹 멘트 10개 (시청자를 즉시 사로잡는 짧고 강렬한 문장)
    - 질문형, 감탄형, 충격형 등 다양하게
    - 반드시 15자 이내
-   - 예시: "이거 진짜 무한이야?", "초밥이 이 가격에?", "여기 알고 있었어?"
+   - 예시: "이거 실화임?", "여기 미쳤다", "이 가격에 이게 돼?"
 3. 각 장면의 narration: 반드시 해당 장면에 보이는 것(음식, 공간, 분위기 등)을 직접 언급
    - 장면N의 narration은 반드시 장면N의 핵심요소/묘사를 기반으로 작성
    - 화면 자막으로도 쓰이므로 반드시 15자 이내 짧고 간결한 한 문장
    - TTS로 자연스럽게 읽혀야 함
+   - 반드시 MZ 말투로 작성
 4. bgm_mood: 배경음악 분위기 (energetic, calm, warm, trendy, elegant 중 하나)
 5. 장면당 약 {duration_per_scene}초, 전체 {self.target_duration}초 목표
+6. ending_candidates: 마지막 장면에 쓸 엔딩 멘트 10개 (팔로우/저장 유도, 또는 여운 남기는 문장)
+   - 반드시 15자 이내
+   - 예시: "저장 필수!", "팔로우 안 하면 손해", "다음 영상도 기대해줘요!"
 
 아래 JSON 형식으로만 응답하세요. 다른 텍스트 없이 JSON만 출력하세요.
 
@@ -145,6 +161,10 @@ class ScriptGenerator:
   "hook_candidates": [
     "후킹멘트1", "후킹멘트2", "후킹멘트3", "후킹멘트4", "후킹멘트5",
     "후킹멘트6", "후킹멘트7", "후킹멘트8", "후킹멘트9", "후킹멘트10"
+  ],
+  "ending_candidates": [
+    "엔딩멘트1", "엔딩멘트2", "엔딩멘트3", "엔딩멘트4", "엔딩멘트5",
+    "엔딩멘트6", "엔딩멘트7", "엔딩멘트8", "엔딩멘트9", "엔딩멘트10"
   ],
   "scenes": [
     {{
@@ -228,6 +248,14 @@ class ScriptGenerator:
             scenes[0].narration = selected_hook
             scenes[0].subtitle  = selected_hook
             print(f"[릴몽] 선택된 후킹 멘트: {selected_hook}")
+
+        # 엔딩 멘트 처리: 랜덤 선택 → 마지막 장면 나레이션으로 교체
+        ending_candidates = data.get("ending_candidates", [])
+        if ending_candidates and len(scenes) > 1:
+            selected_ending = random.choice(ending_candidates)
+            scenes[-1].narration = selected_ending
+            scenes[-1].subtitle  = selected_ending
+            print(f"[릴몽] 선택된 엔딩 멘트: {selected_ending}")
 
         # 전체 나레이션 텍스트 조합 (TTS 입력용)
         full_text = " ".join(s.narration for s in scenes if s.narration)

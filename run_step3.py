@@ -25,7 +25,7 @@ from src.step3_audio.bgm import BGMManager
 from src.step3_audio.mixer import AudioMixer
 from src.step4_video.renderer import _find_video_files
 
-NARRATION_DELAY = 0.0  # 나레이션 딜레이 없음 (바로 시작)
+NARRATION_DELAY = 0.3  # 장면 전환 후 0.3초 뒤 나레이션 시작
 
 
 def get_video_durations(videos_dir: str) -> list[float]:
@@ -88,17 +88,34 @@ def main():
     print()
 
     # 2) TTS 생성 + 큐 방식 타이밍 계산
+    # 규칙:
+    #   - 나레이션 시작 = max(장면 전환 시각 + 0.3s, 이전 나레이션 종료 시각)  → 겹침 방지
+    #   - 영상 종료 시각을 초과하는 나레이션은 스킵 (엔딩멘트는 영상 끝에 맞춰 트림)
     print("[*] TTS 나레이션 생성 중...")
     tts       = TTSGenerator.for_category(category)
     audio_dir = OUTPUT_DIR / "audio"
     audio_dir.mkdir(parents=True, exist_ok=True)
 
-    scene_audios  = []
-    queue_end_ms  = 0  # 마지막으로 배치된 나레이션이 끝나는 시각
+    scene_audios      = []
+    total_duration_ms = int(total_duration * 1000)
+    delay_ms          = int(NARRATION_DELAY * 1000)
+    queue_end_ms      = 0   # 이전 나레이션이 끝나는 시각
+    last_scene_idx    = len(scenes) - 1  # 엔딩멘트 = 마지막 장면
+
+    import re as _re
+    from pydub import AudioSegment
+
+    def _clean_narration(text: str) -> str:
+        """이모티콘·특수문자 제거, 공백 정리"""
+        # 유니코드 이모지 제거 (기본 다국어 평면 밖 문자)
+        text = _re.sub(r'[\U00010000-\U0010ffff]', '', text)
+        # 기타 이모지/특수 심볼 범위 제거
+        text = _re.sub(r'[\u2600-\u27BF\u2B00-\u2BFF\uFE00-\uFE0F]', '', text)
+        return text.strip()
 
     for i, scene in enumerate(scenes):
         idx       = scene["scene_index"]
-        narration = scene.get("narration", "").strip()
+        narration = _clean_narration(scene.get("narration", ""))
         if not narration:
             continue
 
@@ -110,32 +127,73 @@ def main():
         print(f"    [TTS] 장면 {idx}: {narration}")
         tts.generate(narration, out_path)
 
-        # TTS 길이 측정
-        from pydub import AudioSegment
         tts_duration_ms = len(AudioSegment.from_file(out_path))
+        scene_start_ms  = int(actual_start_times[i] * 1000) + delay_ms
+        start_ms        = max(scene_start_ms, queue_end_ms)  # 겹침 방지
+        end_ms          = start_ms + tts_duration_ms
+        is_ending       = (i == last_scene_idx)
 
-        # 큐 구조: 이전 나레이션 끝나면 바로 시작 (장면 전환 무관)
-        start_ms     = queue_end_ms
-        queue_end_ms = start_ms + tts_duration_ms
+        # 시작 시각이 영상 밖이면 스킵
+        if start_ms >= total_duration_ms:
+            print(f"        [!] 장면 {idx}: 시작 시각이 영상 종료 후 → 건너뜀")
+            continue
 
-        print(f"        시작: {start_ms/1000:.2f}s  끝: {queue_end_ms/1000:.2f}s  길이: {tts_duration_ms/1000:.2f}s")
+        # 나레이션이 영상 종료를 초과할 때
+        ENDING_BUFFER_MS = 500  # 엔딩멘트 후 0.5초 여유
+        if end_ms > total_duration_ms:
+            if is_ending:
+                # 엔딩멘트: 영상 종료 0.5초 전에 끝나도록 시작 시각 역산
+                ideal_start = total_duration_ms - tts_duration_ms - ENDING_BUFFER_MS
+                if ideal_start >= queue_end_ms:
+                    # 이전 나레이션 안 겹치면 당겨서 배치
+                    start_ms = ideal_start
+                    end_ms   = start_ms + tts_duration_ms
+                    print(f"        엔딩(역산): {start_ms/1000:.2f}s~{end_ms/1000:.2f}s")
+                elif queue_end_ms + tts_duration_ms + ENDING_BUFFER_MS <= total_duration_ms:
+                    # queue 바로 다음에 배치하면 버퍼 확보 가능
+                    start_ms = queue_end_ms
+                    end_ms   = start_ms + tts_duration_ms
+                    print(f"        엔딩(queue후): {start_ms/1000:.2f}s~{end_ms/1000:.2f}s")
+                else:
+                    # 공간이 부족 → 영상 끝에 맞춰 트림 (최후 수단)
+                    tts_duration_ms = total_duration_ms - start_ms - ENDING_BUFFER_MS
+                    end_ms = start_ms + tts_duration_ms
+                    print(f"        엔딩(트림): {start_ms/1000:.2f}s~{end_ms/1000:.2f}s")
+            else:
+                # 일반 나레이션: 영상 종료 초과 시 스킵
+                print(f"        [!] 장면 {idx}: 영상 종료 초과 → 건너뜀")
+                continue
+        else:
+            print(f"        시작: {start_ms/1000:.2f}s  끝: {end_ms/1000:.2f}s  길이: {tts_duration_ms/1000:.2f}s")
+
+        queue_end_ms = end_ms  # 다음 나레이션은 이 시각 이후에 시작
 
         scene_audios.append({
-            "path":        out_path,
-            "start_ms":    start_ms,
-            "scene_index": idx,
+            "path":         out_path,
+            "start_ms":     start_ms,
+            "scene_index":  idx,
+            "narration":    narration,
             "tts_duration": tts_duration_ms / 1000.0,
         })
 
     print(f"[v] TTS 완료: {len(scene_audios)}개")
 
-    # TTS 길이 목록 저장 → STEP 4에서 클립 길이 조정에 사용
-    tts_durations = [s["tts_duration"] for s in scene_audios]
-    timings_path  = OUTPUT_DIR / "step3_tts_durations.json"
+    # 나레이션 타이밍 저장 → STEP 4 자막 타이밍에 사용
+    narr_timings = [
+        {
+            "scene_index": s["scene_index"],
+            "narration":   s["narration"],
+            "start":       s["start_ms"] / 1000.0,
+            "duration":    s["tts_duration"],
+            "path":        s["path"],
+        }
+        for s in scene_audios
+    ]
+    timings_path = OUTPUT_DIR / "step3_narr_timings.json"
     with open(timings_path, "w", encoding="utf-8") as f:
         import json as _json
-        _json.dump(tts_durations, f, ensure_ascii=False, indent=2)
-    print(f"[v] 클립 타이밍 저장: {timings_path.name}")
+        _json.dump(narr_timings, f, ensure_ascii=False, indent=2)
+    print(f"[v] 나레이션 타이밍 저장: {timings_path.name}")
 
     print()
 
@@ -153,13 +211,13 @@ def main():
     # 4) 믹싱
     print("[*] 오디오 믹싱 중...")
     mixer            = AudioMixer()
-    total_duration_ms = int(total_duration * 1000) + 1000
-    final_audio_path  = str(OUTPUT_DIR / "step3_final_audio.mp3")
+    # 오디오 캔버스 = 영상 길이에 맞춤 (나레이션은 이미 영상 범위 내로 제한됨)
+    final_audio_path = str(OUTPUT_DIR / "step3_final_audio.mp3")
 
     mixer.mix(
         scene_audio_paths=scene_audios,
         bgm_path=bgm_path,
-        total_duration_ms=total_duration_ms,
+        total_duration_ms=total_duration_ms,  # 영상 길이 기준
         output_path=final_audio_path,
     )
 

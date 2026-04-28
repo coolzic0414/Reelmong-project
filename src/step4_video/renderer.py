@@ -164,9 +164,15 @@ class VideoRenderer:
         audio_path: str,
         output_path: str,
         videos_dir: str,
-        tts_durations: list[float] | None = None,
+        narr_timings: list[dict] | None = None,
+        tts_durations: list[float] | None = None,  # 하위 호환용 (미사용)
     ) -> str:
-        """영상 클립 연결 + 자막 + 오디오 → 최종 비디오 렌더링"""
+        """영상 클립 연결 + 자막 + 오디오 → 최종 비디오 렌더링
+
+        자막 타이밍:
+          narr_timings 있음 → 나레이션 시작 시각 기준으로 전체 타임라인에 오버레이
+          narr_timings 없음 → 클립별 자막 (기존 방식 폴백)
+        """
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
 
         scenes = storyboard.get("scenes", [])
@@ -178,32 +184,52 @@ class VideoRenderer:
 
         print(f"    [영상] {len(video_files)}개 클립 발견")
 
-        # 1) 클립 로드 + 리사이즈 + 자막 오버레이
+        # 1) 클립 로드 + 리사이즈 (자막 없이, 자연 길이 그대로)
         scene_clips = []
         for i, video_path in enumerate(video_files):
             print(f"    [클립 {i + 1}/{len(video_files)}] {video_path.name} 처리 중...")
-
             clip = self._load_and_fit(str(video_path))
 
-            # 나레이션 길이에 맞게 클립 길이 조정
-            if tts_durations and i < len(tts_durations):
-                clip = self._adjust_duration(clip, tts_durations[i])
-
-            # 인덱스에 맞는 장면의 나레이션 자막 적용
-            narration = ""
-            if i < len(scenes):
+            # narr_timings 없을 때만 기존 방식(클립별 자막) 적용
+            if not narr_timings and i < len(scenes):
                 narration = scenes[i].get("narration", "")
-
-            if narration:
-                clip = self._add_subtitle(clip, narration)
+                if narration:
+                    clip = self._add_subtitle(clip, narration)
 
             scene_clips.append(clip)
 
-        # 2) 클립 연결
+        # 2) 클립 연결 (자연 길이 기준)
         print("    [편집] 클립 연결 중...")
         final_video = concatenate_videoclips(scene_clips, method="compose")
 
-        # 3) 오디오 합성
+        # 3) 나레이션 타이밍 기준 자막 오버레이
+        if narr_timings:
+            print("    [자막] 나레이션 타이밍 기준 오버레이 적용 중...")
+            subtitle_overlays = []
+            for timing in narr_timings:
+                narr_start = timing["start"]
+                narr_dur   = timing["duration"]
+                narration  = timing.get("narration", "")
+
+                if not narration or narr_start >= final_video.duration:
+                    continue
+
+                # 영상 끝을 넘어가면 클리핑
+                actual_dur = min(narr_dur, final_video.duration - narr_start)
+                if actual_dur <= 0:
+                    continue
+
+                subtitle_clip = self._make_subtitle_overlay(narration, actual_dur)
+                subtitle_clip = subtitle_clip.with_start(narr_start)
+                subtitle_overlays.append(subtitle_clip)
+
+            if subtitle_overlays:
+                final_video = CompositeVideoClip(
+                    [final_video] + subtitle_overlays,
+                    size=(self.width, self.height),
+                )
+
+        # 4) 오디오 합성
         if audio_path and Path(audio_path).exists():
             print("    [오디오] 합성 중...")
             audio = AudioFileClip(audio_path)
@@ -211,7 +237,7 @@ class VideoRenderer:
                 audio = audio.subclipped(0, final_video.duration)
             final_video = final_video.with_audio(audio)
 
-        # 4) 최종 렌더링
+        # 5) 최종 렌더링
         print("    [렌더링] MP4 인코딩 중...")
         final_video.write_videofile(
             output_path,
@@ -337,6 +363,60 @@ class VideoRenderer:
         except Exception as e:
             print(f"    [!] 자막 생성 실패: {e}")
             return clip
+
+    def _make_subtitle_overlay(self, text: str, duration: float):
+        """전체 타임라인용 자막 오버레이 클립 생성
+        - with_start(narr_start)로 타이밍 지정해서 사용
+        - t=0부터 팝 애니메이션 시작
+        """
+        try:
+            text_arr = _render_text_image(
+                text=text,
+                font_path=self.font,
+                font_size=59,
+                text_color=(255, 255, 255, 255),
+                stroke_color=(0, 0, 0, 255),
+                stroke_width=2,
+                bg_color=(0, 0, 0, 0),
+                max_width=self.width - 160,
+            )
+            pil_img        = Image.fromarray(text_arr)
+            base_w, base_h = pil_img.size
+
+            POP_PEAK   = 0.10
+            POP_END    = 0.22
+            PEAK_SCALE = 1.3
+            cw, ch     = self.width, self.height
+
+            def make_frame(t):
+                # 팝 애니메이션 (t=0 기준)
+                if t < POP_PEAK:
+                    scale = (t / POP_PEAK) * PEAK_SCALE
+                elif t < POP_END:
+                    progress = (t - POP_PEAK) / (POP_END - POP_PEAK)
+                    scale    = PEAK_SCALE - (PEAK_SCALE - 1.0) * progress
+                else:
+                    scale = 1.0
+
+                scale = max(0.01, scale)
+                new_w  = max(1, int(base_w * scale))
+                new_h  = max(1, int(base_h * scale))
+                scaled = pil_img.resize((new_w, new_h), Image.LANCZOS)
+
+                canvas = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
+                x = (cw - new_w) // 2
+                y = (ch - new_h) // 2
+                canvas.paste(scaled, (x, y), scaled)
+                return np.array(canvas)
+
+            return (
+                VideoClip(make_frame, duration=duration, is_mask=False)
+                .with_fps(self.fps)
+            )
+        except Exception as e:
+            print(f"    [!] 자막 오버레이 생성 실패: {e}")
+            return VideoClip(lambda t: np.zeros((self.height, self.width, 4), dtype=np.uint8),
+                             duration=duration).with_fps(self.fps)
 
     def _join_scenes(self, clips: list, transitions: list):
         """장면 전환 효과를 적용하여 클립 연결"""

@@ -83,18 +83,18 @@ def main():
         print("    → 오디오 없이 무음 영상으로 렌더링합니다.")
     print()
 
-    # 4) TTS 타이밍 로드
-    tts_durations = None
-    tts_durations_path = OUTPUT_DIR / "step3_tts_durations.json"
-    if tts_durations_path.exists():
-        with open(tts_durations_path, "r", encoding="utf-8") as f:
-            tts_durations = json.load(f)
-        print(f"[v] 클립 타이밍 로드: {len(tts_durations)}개")
-        for i, d in enumerate(tts_durations):
-            print(f"    [{i}] {d:.2f}s")
+    # 4) 나레이션 타이밍 로드 (step3에서 생성)
+    narr_timings = None
+    narr_timings_path = OUTPUT_DIR / "step3_narr_timings.json"
+    if narr_timings_path.exists():
+        with open(narr_timings_path, "r", encoding="utf-8") as f:
+            narr_timings = json.load(f)
+        print(f"[v] 나레이션 타이밍 로드: {len(narr_timings)}개")
+        for t in narr_timings:
+            print(f"    [장면 {t['scene_index']}] 시작 {t['start']:.2f}s  길이 {t['duration']:.2f}s  끝 {t['start']+t['duration']:.2f}s")
         print()
     else:
-        print("[!] step3_tts_durations.json 없음 → 원본 클립 길이 사용")
+        print("[!] step3_narr_timings.json 없음 → 클립별 자막 방식 사용")
         print()
 
     # 5) 렌더링
@@ -109,7 +109,7 @@ def main():
         audio_path=str(audio_path) if audio_path.exists() else "",
         output_path=str(output_path),
         videos_dir=str(videos_dir),
-        tts_durations=tts_durations,
+        narr_timings=narr_timings,
     )
 
     if result_path and Path(result_path).exists():
