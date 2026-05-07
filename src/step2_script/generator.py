@@ -241,18 +241,28 @@ class ScriptGenerator:
             scenes.append(scene)
             current_time += duration
 
-        # 후킹 멘트 처리: 랜덤 선택 → 첫 장면 나레이션으로 교체
+        # 후킹 멘트 처리: 바이럴 점수 기반 상위 3개 중 선택 (완전 랜덤 대체)
         hook_candidates = data.get("hook_candidates", [])
         if hook_candidates and scenes:
-            selected_hook = random.choice(hook_candidates)
+            try:
+                from crol.recommend.scorer import pick_best_hook, score_hook_candidates
+                scored_hooks = score_hook_candidates(hook_candidates)
+                print(f"[릴몽] 후킹 점수 TOP3: {[(h, round(s,2)) for h, s in scored_hooks[:3]]}")
+                selected_hook = pick_best_hook(hook_candidates, top_k=3)
+            except Exception:
+                selected_hook = random.choice(hook_candidates)
             scenes[0].narration = selected_hook
             scenes[0].subtitle  = selected_hook
             print(f"[릴몽] 선택된 후킹 멘트: {selected_hook}")
 
-        # 엔딩 멘트 처리: 랜덤 선택 → 마지막 장면 나레이션으로 교체
+        # 엔딩 멘트 처리: 바이럴 점수 기반 상위 3개 중 선택
         ending_candidates = data.get("ending_candidates", [])
         if ending_candidates and len(scenes) > 1:
-            selected_ending = random.choice(ending_candidates)
+            try:
+                from crol.recommend.scorer import pick_best_hook
+                selected_ending = pick_best_hook(ending_candidates, top_k=3)
+            except Exception:
+                selected_ending = random.choice(ending_candidates)
             scenes[-1].narration = selected_ending
             scenes[-1].subtitle  = selected_ending
             print(f"[릴몽] 선택된 엔딩 멘트: {selected_ending}")

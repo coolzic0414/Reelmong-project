@@ -1,5 +1,6 @@
 """
 YouTube Data API 수집기 — 음식 쇼츠 전용
+채널 구독자 수 수집으로 성장률 기반 가중치 지원
 """
 import json
 import re
@@ -12,7 +13,7 @@ from googleapiclient.discovery import build
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from crol_config import YOUTUBE_API_KEY, REGION_CODE, MAX_RESULTS_POPULAR, MAX_RESULTS_SEARCH
 from collect.keywords import get_active_keywords
-from db.database import upsert_video
+from db.database import upsert_video, upsert_channel
 
 
 def _build_service():
@@ -46,6 +47,19 @@ def _fetch_video_details(service, video_ids: list[str]) -> dict:
     return result
 
 
+def _fetch_channel_details(service, channel_ids: list[str]) -> dict:
+    result = {}
+    for i in range(0, len(channel_ids), 50):
+        chunk = channel_ids[i:i+50]
+        resp  = service.channels().list(
+            part="snippet,statistics",
+            id=",".join(chunk),
+        ).execute()
+        for item in resp.get("items", []):
+            result[item["id"]] = item
+    return result
+
+
 def _days_ago_iso(days: int) -> str:
     dt = datetime.now(timezone.utc) - timedelta(days=days)
     return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -66,6 +80,7 @@ def _build_row(vid: str, item: dict, snapshot_at: str, source: str, keyword: str
         "description"  : snippet.get("description", ""),
         "tags"         : json.dumps(snippet.get("tags", []), ensure_ascii=False),
         "channel"      : snippet.get("channelTitle", ""),
+        "channel_id"   : snippet.get("channelId", ""),
         "view_count"   : int(stats.get("viewCount", 0)),
         "like_count"   : int(stats.get("likeCount", 0)),
         "comment_count": int(stats.get("commentCount", 0)),
@@ -75,7 +90,35 @@ def _build_row(vid: str, item: dict, snapshot_at: str, source: str, keyword: str
     }
 
 
-def collect_popular(snapshot_at: str):
+def collect_channel_stats(snapshot_at: str, channel_ids: list[str]):
+    """
+    채널 구독자 수·영상 수·총조회수 수집 → channels 테이블 저장
+    viral_coefficient 계산의 기반 데이터
+    """
+    if not channel_ids:
+        return
+    service  = _build_service()
+    unique   = list(dict.fromkeys(cid for cid in channel_ids if cid))
+    details  = _fetch_channel_details(service, unique)
+    saved    = 0
+    for ch_id, item in details.items():
+        stats = item.get("statistics", {})
+        # 구독자 숨김 채널은 0으로 처리
+        sub_count = int(stats.get("subscriberCount", 0)) if not stats.get("hiddenSubscriberCount") else 0
+        upsert_channel({
+            "channel_id"      : ch_id,
+            "snapshot_at"     : snapshot_at,
+            "title"           : item.get("snippet", {}).get("title", ""),
+            "subscriber_count": sub_count,
+            "video_count"     : int(stats.get("videoCount", 0)),
+            "view_count"      : int(stats.get("viewCount", 0)),
+        })
+        saved += 1
+    print(f"[youtube] 채널 통계 {saved}개 저장 (구독자 수 기반 성장률 계산용)")
+
+
+def collect_popular(snapshot_at: str) -> list[str]:
+    """인기 영상 수집. 수집된 channel_id 목록 반환"""
     service, video_ids, next_page, collected = _build_service(), [], None, 0
     while collected < MAX_RESULTS_POPULAR:
         kwargs = dict(part="id", chart="mostPopular", regionCode=REGION_CODE,
@@ -90,15 +133,22 @@ def collect_popular(snapshot_at: str):
         if not next_page:
             break
 
-    details = _fetch_video_details(service, video_ids)
+    details     = _fetch_video_details(service, video_ids)
+    channel_ids = []
     for vid, item in details.items():
         upsert_video(_build_row(vid, item, snapshot_at, "popular", None))
+        ch_id = item.get("snippet", {}).get("channelId", "")
+        if ch_id:
+            channel_ids.append(ch_id)
     print(f"[youtube] popular: {len(details)}개 저장")
+    return channel_ids
 
 
-def collect_food_search(snapshot_at: str):
-    service  = _build_service()
-    keywords = get_active_keywords()
+def collect_food_search(snapshot_at: str) -> list[str]:
+    """키워드 검색 수집. 수집된 channel_id 목록 반환"""
+    service     = _build_service()
+    keywords    = get_active_keywords()
+    channel_ids = []
     print(f"[youtube] 활성 키워드 {len(keywords)}개로 수집")
 
     for keyword in keywords:
@@ -120,15 +170,27 @@ def collect_food_search(snapshot_at: str):
             details   = _fetch_video_details(service, video_ids)
             for vid, item in details.items():
                 upsert_video(_build_row(vid, item, snapshot_at, "search", keyword))
+                ch_id = item.get("snippet", {}).get("channelId", "")
+                if ch_id:
+                    channel_ids.append(ch_id)
             print(f"[youtube] '{keyword}': {len(video_ids)}개 저장")
         except Exception as e:
             print(f"[youtube] '{keyword}' 오류: {e}")
+
+    return channel_ids
 
 
 def run_collection():
     snapshot_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"\n=== 수집 시작: {snapshot_at} ===")
-    collect_popular(snapshot_at)
-    collect_food_search(snapshot_at)
+
+    ch_ids_popular = collect_popular(snapshot_at)
+    ch_ids_search  = collect_food_search(snapshot_at)
+
+    # 채널 구독자 수 수집 (중복 제거)
+    all_channel_ids = list(dict.fromkeys(ch_ids_popular + ch_ids_search))
+    print(f"[youtube] 채널 {len(all_channel_ids)}개 구독자 수 수집 중...")
+    collect_channel_stats(snapshot_at, all_channel_ids)
+
     print(f"=== 수집 완료 ===\n")
     return snapshot_at
