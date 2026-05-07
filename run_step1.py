@@ -5,10 +5,9 @@
 #python run_step4.py
 
 사전 준비:
-  1. pip install transformers torch Pillow python-dotenv requests moviepy
-  2. Ollama 설치 후 'ollama serve' 실행
-  3. 'ollama pull gemma3:4b' 로 모델 다운로드
-  4. data/images/ 폴더에 영상 파일(mp4) 넣기
+  1. pip install -r requirements.txt
+  2. .env 파일에 OPENROUTER_API_KEY 설정
+  3. data/images/ 폴더에 영상 파일(mp4) 넣기
 
 사용법:
   python run_step1.py --name "매장 이름" --intro "매장 소개"
@@ -68,33 +67,28 @@ def extract_middle_frames(video_files: list[Path], frames_dir: Path) -> list[str
     return frame_paths
 
 
-def check_ollama():
-    """Ollama 서버 상태 확인"""
-    import requests
-    try:
-        r = requests.get("http://localhost:11434/api/tags", timeout=5)
-        r.raise_for_status()
-        models = [m["name"] for m in r.json().get("models", [])]
-        print(f"[v] Ollama 서버 연결 OK")
-        print(f"    설치된 모델: {', '.join(models) if models else '없음'}")
-        return True
-    except Exception:
-        print("[X] Ollama 서버에 연결할 수 없습니다!")
-        print("    1. Ollama 설치: https://ollama.com")
-        print("    2. 서버 실행: ollama serve")
-        print("    3. 모델 설치: ollama pull gemma3:4b")
+def check_openrouter():
+    """OpenRouter API 키 확인"""
+    from config.settings import OPENROUTER_API_KEY
+    if not OPENROUTER_API_KEY or OPENROUTER_API_KEY == "your_openrouter_api_key_here":
+        print("[X] OPENROUTER_API_KEY 가 설정되지 않았습니다!")
+        print("    1. .env.example 을 복사하여 .env 파일 생성")
+        print("    2. OPENROUTER_API_KEY=your_key_here 입력")
+        print("    3. https://openrouter.ai/settings/keys 에서 키 발급")
         return False
+    print(f"[v] OpenRouter API 키 확인 OK")
+    return True
 
 
 def interactive_mode():
     """대화형 모드"""
     print("=" * 50)
     print("  릴몽 STEP 1: Vision 이미지 분석")
-    print("  (영상 중간 프레임 추출 → BLIP + Ollama)")
+    print("  (영상 중간 프레임 추출 → Gemini Vision)")
     print("=" * 50)
     print()
 
-    if not check_ollama():
+    if not check_openrouter():
         return
 
     # 영상 파일 탐색
@@ -125,7 +119,7 @@ def interactive_mode():
     print(f"[v] 프레임 추출 완료: {len(frame_paths)}개")
     print()
     print("[*] 이미지 분석 시작...")
-    print("    (BLIP 모델 최초 로딩에 1~2분 소요될 수 있습니다)")
+    print("    (Gemini Vision API 호출)")
     print()
 
     analyzer = ImageAnalyzer()
@@ -151,7 +145,7 @@ def interactive_mode():
 
 def cli_mode(args):
     """CLI 인자 모드"""
-    if not check_ollama():
+    if not check_openrouter():
         return
 
     video_files = _find_video_files(str(IMAGES_DIR))

@@ -1,6 +1,6 @@
 """STEP 2: 스크립트 생성 모듈
 
-STEP 1 결과 (StoreAnalysis JSON) → Ollama LLM → 30초 릴스 스토리보드
+STEP 1 결과 (StoreAnalysis JSON) → Gemini LLM → 30초 릴스 스토리보드
 - 장면별 나레이션 + 자막
 - BGM 분위기 결정
 """
@@ -8,11 +8,12 @@ import json
 import random
 from pathlib import Path
 
-import requests
+from openai import OpenAI
 
 from config.settings import (
-    OLLAMA_BASE_URL,
-    OLLAMA_MODEL,
+    OPENROUTER_API_KEY,
+    OPENROUTER_BASE_URL,
+    LLM_MODEL,
     VIDEO_DURATION_MIN,
     VIDEO_DURATION_MAX,
     CATEGORIES,
@@ -25,31 +26,22 @@ class ScriptGenerator:
     """STEP 1 분석 결과를 받아 숏폼 스토리보드를 생성"""
 
     def __init__(self):
-        self.model = OLLAMA_MODEL
+        self.client = OpenAI(
+            base_url=OPENROUTER_BASE_URL,
+            api_key=OPENROUTER_API_KEY,
+        )
+        self.model = LLM_MODEL
         self.target_duration = 25  # 목표 영상 길이 (초)
 
-    def _ollama_generate(self, prompt: str) -> str:
-        """Ollama 로컬 LLM 호출"""
-        try:
-            response = requests.post(
-                f"{OLLAMA_BASE_URL}/api/generate",
-                json={
-                    "model": self.model,
-                    "prompt": prompt,
-                    "stream": False,
-                    "options": {
-                        "temperature": 0.7,
-                        "num_predict": 2048,
-                    },
-                },
-                timeout=180,
-            )
-            response.raise_for_status()
-            return response.json()["response"]
-        except requests.ConnectionError:
-            print("[!] Ollama 서버에 연결할 수 없습니다.")
-            print("    → 'ollama serve' 로 서버를 실행해주세요.")
-            raise
+    def _llm_generate(self, prompt: str, temperature: float = 0.7) -> str:
+        """Gemini LLM 호출 (OpenRouter)"""
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=2048,
+            temperature=temperature,
+        )
+        return response.choices[0].message.content
 
     def _parse_json_from_response(self, text: str) -> dict:
         """LLM 응답에서 JSON 추출"""
@@ -89,18 +81,16 @@ class ScriptGenerator:
 
         print(f"[릴몽] 스크립트 생성 시작 ({num_scenes}개 장면)")
 
-        # 1) LLM으로 스토리보드 생성
-        print("[릴몽] Ollama로 스토리보드 생성 중...")
+        print("[릴몽] Gemini로 스토리보드 생성 중...")
         storyboard_data = self._generate_storyboard(analysis)
 
-        # 2) 구조화된 Storyboard 객체 생성
         storyboard = self._build_storyboard(storyboard_data, analysis)
 
         print(f"[릴몽] 스크립트 생성 완료! (총 {storyboard.total_duration:.1f}초)")
         return storyboard
 
     def _generate_storyboard(self, analysis: StoreAnalysis) -> dict:
-        """Ollama로 스토리보드 JSON 생성"""
+        """Gemini로 스토리보드 JSON 생성"""
         scenes_info = "\n".join(
             f"  장면{i+1}: [{s.scene_type}] {s.description_ko} / 핵심요소: {', '.join(s.key_elements)} / 분위기: {s.mood}"
             for i, s in enumerate(analysis.scenes)
@@ -175,7 +165,7 @@ class ScriptGenerator:
   ]
 }}"""
 
-        response_text = self._ollama_generate(prompt)
+        response_text = self._llm_generate(prompt)
         result = self._parse_json_from_response(response_text)
 
         if not result or "scenes" not in result:
@@ -192,13 +182,13 @@ class ScriptGenerator:
         scenes = []
         for i, scene in enumerate(analysis.scenes):
             if i == 0:
-                narration = f"{analysis.store_name} 방문해요!"
+                narration = f"{analysis.store_name} 방문해봐!"
             elif scene.scene_type == "food":
-                narration = "정성 가득한 메뉴!"
+                narration = "이 맛 실화야?"
             elif scene.scene_type == "interior":
-                narration = "편안한 공간에서"
+                narration = "분위기 미쳤어!"
             else:
-                narration = "특별한 경험!"
+                narration = "여기 레전드잖아!"
 
             scenes.append({
                 "scene_index": i + 1,
@@ -219,12 +209,10 @@ class ScriptGenerator:
         raw_scenes = data.get("scenes", [])
 
         for i, raw in enumerate(raw_scenes):
-            # 이미지 매핑: 장면 수와 이미지 수 맞추기
             image_idx = min(i, len(analysis.scenes) - 1)
             image_path = analysis.scenes[image_idx].image_path
 
             duration = float(raw.get("duration", 4.0))
-            # 최소 2초, 최대 8초로 클램핑
             duration = max(2.0, min(8.0, duration))
 
             narration = raw.get("narration", "")
@@ -232,7 +220,7 @@ class ScriptGenerator:
                 scene_index=raw.get("scene_index", i + 1),
                 image_path=image_path,
                 narration=narration,
-                subtitle=narration,  # 자막 = 나레이션 동일
+                subtitle=narration,
                 duration=duration,
                 start_time=current_time,
                 effect=raw.get("effect", "ken_burns"),
@@ -241,7 +229,7 @@ class ScriptGenerator:
             scenes.append(scene)
             current_time += duration
 
-        # 후킹 멘트 처리: 바이럴 점수 기반 상위 3개 중 선택 (완전 랜덤 대체)
+        # 후킹 멘트 처리: 바이럴 점수 기반 상위 3개 중 선택
         hook_candidates = data.get("hook_candidates", [])
         if hook_candidates and scenes:
             try:
@@ -267,10 +255,7 @@ class ScriptGenerator:
             scenes[-1].subtitle  = selected_ending
             print(f"[릴몽] 선택된 엔딩 멘트: {selected_ending}")
 
-        # 전체 나레이션 텍스트 조합 (TTS 입력용)
         full_text = " ".join(s.narration for s in scenes if s.narration)
-
-        # food_type: LLM이 뽑은 값 우선, 없으면 category로 fallback
         food_type = data.get("food_type", "").strip() or analysis.category
 
         storyboard = Storyboard(
