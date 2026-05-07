@@ -1,40 +1,41 @@
 """
-Ollama LLM 연동 — 대본 + DB 트렌드 기반 제목/태그 생성 (강화버전)
+AI LLM 연동 — 대본 + DB 트렌드 기반 제목/태그 생성 (OpenRouter 버전)
 
-개선사항:
-- 텍스트 줄 파싱 → JSON 구조화 출력 (안정성↑)
-- 트렌드 참고 데이터 더 풍부하게 활용 (제목 패턴 + 해시태그)
-- 카테고리/분위기 정보 프롬프트에 포함
+Gemini LLM (google/gemini-2.5-flash) via OpenRouter
+- JSON 구조화 출력
+- 트렌드 참고 데이터 활용
 - 생성 실패 시 단계별 fallback
 """
 import json
-import sys, os
-import requests
+import sys
+import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from crol_config import OLLAMA_HOST, OLLAMA_MODEL, OLLAMA_TIMEOUT
+from crol_config import OPENROUTER_API_KEY, OPENROUTER_BASE_URL, OLLAMA_MODEL, OLLAMA_TIMEOUT
+
+from openai import OpenAI
 
 
-def _call_ollama(prompt: str, temperature: float = 0.7) -> str | None:
-    """Ollama API 호출"""
+def _get_client() -> OpenAI:
+    return OpenAI(
+        base_url=OPENROUTER_BASE_URL,
+        api_key=OPENROUTER_API_KEY,
+    )
+
+
+def _call_llm(prompt: str, temperature: float = 0.7) -> str | None:
+    """Gemini LLM API 호출 (OpenRouter)"""
     try:
-        resp = requests.post(
-            f"{OLLAMA_HOST}/api/generate",
-            json={
-                "model": OLLAMA_MODEL,
-                "prompt": prompt,
-                "stream": False,
-                "options": {"temperature": temperature},
-            },
-            timeout=OLLAMA_TIMEOUT,
+        client = _get_client()
+        response = client.chat.completions.create(
+            model=OLLAMA_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=1024,
+            temperature=temperature,
         )
-        resp.raise_for_status()
-        return resp.json().get("response", "").strip()
-    except requests.exceptions.ConnectionError:
-        print(f"[ollama] 연결 실패 — Ollama가 실행 중인지 확인하세요 ({OLLAMA_HOST})")
-        return None
+        return response.choices[0].message.content.strip()
     except Exception as e:
-        print(f"[ollama] 오류: {e}")
+        print(f"[ai] 오류: {e}")
         return None
 
 
@@ -43,7 +44,6 @@ def _parse_json_response(text: str) -> dict | None:
     if not text:
         return None
     text = text.strip()
-    # ```json ... ``` 블록 추출
     if "```" in text:
         start = text.find("```")
         end = text.rfind("```")
@@ -124,29 +124,28 @@ def _build_prompt(script: str, food_type: str, info: dict, patterns: dict) -> st
 
 def generate(script: str, food_type: str, info: dict, patterns: dict) -> dict:
     """
-    Ollama로 제목 + 해시태그 생성 (JSON 구조화 출력)
+    Gemini LLM으로 제목 + 해시태그 생성 (JSON 구조화 출력)
 
     반환: {"titles": [...], "hashtags": [...]}
     """
-    print(f"[ollama] {OLLAMA_MODEL} 로 생성 중...")
+    print(f"[ai] {OLLAMA_MODEL} 로 생성 중...")
     prompt = _build_prompt(script, food_type, info, patterns)
-    response = _call_ollama(prompt, temperature=0.7)
+    response = _call_llm(prompt, temperature=0.7)
 
     if not response:
-        print("[ollama] 생성 실패")
+        print("[ai] 생성 실패")
         return {"titles": [], "hashtags": []}
 
-    # JSON 파싱 시도
     result = _parse_json_response(response)
     if result and "titles" in result:
         titles = [t for t in result.get("titles", []) if isinstance(t, str)][:5]
         hashtags = [h if h.startswith("#") else f"#{h}"
                     for h in result.get("hashtags", []) if isinstance(h, str)][:15]
-        print(f"[ollama] 제목 {len(titles)}개, 해시태그 {len(hashtags)}개 생성 (JSON)")
+        print(f"[ai] 제목 {len(titles)}개, 해시태그 {len(hashtags)}개 생성 (JSON)")
         return {"titles": titles, "hashtags": hashtags}
 
     # JSON 파싱 실패 시 텍스트 파싱 fallback
-    print("[ollama] JSON 파싱 실패 → 텍스트 파싱 fallback")
+    print("[ai] JSON 파싱 실패 → 텍스트 파싱 fallback")
     titles, hashtags = [], []
     for line in response.splitlines():
         line = line.strip()
@@ -160,17 +159,23 @@ def generate(script: str, food_type: str, info: dict, patterns: dict) -> dict:
         elif line.startswith("#") and len(line) > 1:
             hashtags.extend(h for h in line.split() if h.startswith("#"))
 
-    print(f"[ollama] 제목 {len(titles[:5])}개, 해시태그 {len(hashtags[:15])}개 생성 (text)")
+    print(f"[ai] 제목 {len(titles[:5])}개, 해시태그 {len(hashtags[:15])}개 생성 (text)")
     return {"titles": titles[:5], "hashtags": hashtags[:15]}
 
 
 def check_connection() -> bool:
-    """Ollama 연결 확인"""
+    """OpenRouter 연결 및 API 키 확인"""
     try:
-        resp = requests.get(f"{OLLAMA_HOST}/api/tags", timeout=5)
-        models = [m["name"] for m in resp.json().get("models", [])]
-        print(f"[ollama] 연결 성공 | 설치된 모델: {models}")
+        client = _get_client()
+        # 간단한 테스트 요청
+        response = client.chat.completions.create(
+            model=OLLAMA_MODEL,
+            messages=[{"role": "user", "content": "hi"}],
+            max_tokens=5,
+        )
+        print(f"[ai] OpenRouter 연결 성공 | 모델: {OLLAMA_MODEL}")
         return True
-    except Exception:
-        print(f"[ollama] 연결 실패 ({OLLAMA_HOST})")
+    except Exception as e:
+        print(f"[ai] OpenRouter 연결 실패: {e}")
+        print("    → .env 파일에 OPENROUTER_API_KEY 가 설정되어 있는지 확인하세요.")
         return False

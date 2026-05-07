@@ -3,13 +3,17 @@ from dotenv import load_dotenv
 
 # crol 패키지 루트 디렉토리 (이 파일이 있는 곳)
 _CROL_DIR = os.path.dirname(os.path.abspath(__file__))
+_ROOT_DIR = os.path.dirname(_CROL_DIR)
 
+# 루트 .env → crol/.env 순서로 로드 (루트 OpenRouter 키 공유)
+load_dotenv(os.path.join(_ROOT_DIR, ".env"))
 load_dotenv(os.path.join(_CROL_DIR, ".env"))
 
 # ── API 키 ────────────────────────────────────────────────────────
 YOUTUBE_API_KEY      = os.getenv("YOUTUBE_API_KEY", "")
 NAVER_CLIENT_ID      = os.getenv("NAVER_CLIENT_ID", "")
 NAVER_CLIENT_SECRET  = os.getenv("NAVER_CLIENT_SECRET", "")
+OPENROUTER_API_KEY   = os.getenv("OPENROUTER_API_KEY", "")
 
 # ── 수집 설정 ─────────────────────────────────────────────────────
 REGION_CODE           = "KR"
@@ -58,7 +62,8 @@ TREND_KEYWORDS_COUNT = 10
 # ── 스케줄 설정 ───────────────────────────────────────────────────
 SCHEDULE_TIMES = ["09:00", "18:00", "23:00"]
 
-# ── Ollama 설정 ───────────────────────────────────────────────────
-OLLAMA_HOST  = "http://localhost:11434"
-OLLAMA_MODEL = "gemma3:4b"
-OLLAMA_TIMEOUT = 60          # 초
+# ── OpenRouter / LLM 설정 ─────────────────────────────────────────
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+OLLAMA_MODEL        = "google/gemini-2.5-flash"  # 내부 호환 변수명 유지
+OLLAMA_HOST         = OPENROUTER_BASE_URL        # 내부 호환 변수명 유지
+OLLAMA_TIMEOUT      = 60

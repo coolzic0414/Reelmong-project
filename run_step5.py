@@ -5,7 +5,7 @@ STEP 2에서 생성된 대본(step2_storyboard.json)을 바탕으로
 
 추천 방식:
   1. 템플릿 기반 추천 (업종 + 장소 조합, 즉시 사용 가능)
-  2. Ollama AI 추천 (대본 맥락 기반, gemma3:4b)
+  2. Gemini AI 추천 (대본 맥락 기반, google/gemini-2.5-flash)
   3. DB 인기 해시태그 (crol이 수집한 실제 쇼츠 데이터 기반)
 
 사용법:
@@ -36,7 +36,7 @@ def main():
     parser.add_argument(
         "--no-ollama",
         action="store_true",
-        help="Ollama AI 추천 생략 (템플릿 + DB 기반만 사용)",
+        help="AI 추천 생략 (템플릿 + DB 기반만 사용)",
     )
     args = parser.parse_args()
 
@@ -85,7 +85,7 @@ def main():
         return
 
     # 3) 추천 실행
-    print(f"[*] 추천 실행 중... (Ollama={'ON' if use_ollama else 'OFF'})")
+    print(f"[*] 추천 실행 중... (AI={'ON' if use_ollama else 'OFF'})")
     print()
 
     result = crol_run(
