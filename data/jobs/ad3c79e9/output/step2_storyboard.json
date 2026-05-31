@@ -1,0 +1,122 @@
+{
+  "store_name": "쿠우쿠우",
+  "category": "일식",
+  "food_type": "무한리필 초밥 뷔페",
+  "total_duration": 25.0,
+  "scenes": [
+    {
+      "scene_index": 1,
+      "image_path": "C:\\Users\\wf260113\\Desktop\\rlmong\\reelmong-algorithm\\data\\output\\frames\\frame_00.jpg",
+      "narration": "초밥 무한 실화?",
+      "subtitle": "초밥 무한 실화?",
+      "duration": 2.5,
+      "start_time": 0.0,
+      "effect": "ken_burns",
+      "transition": "crossfade"
+    },
+    {
+      "scene_index": 2,
+      "image_path": "C:\\Users\\wf260113\\Desktop\\rlmong\\reelmong-algorithm\\data\\output\\frames\\frame_01.jpg",
+      "narration": "신선 초밥 라인업 봐봐!",
+      "subtitle": "신선 초밥 라인업 봐봐!",
+      "duration": 2.5,
+      "start_time": 2.5,
+      "effect": "ken_burns",
+      "transition": "crossfade"
+    },
+    {
+      "scene_index": 3,
+      "image_path": "C:\\Users\\wf260113\\Desktop\\rlmong\\reelmong-algorithm\\data\\output\\frames\\frame_02.jpg",
+      "narration": "해산물 샐러드 대박이야!",
+      "subtitle": "해산물 샐러드 대박이야!",
+      "duration": 2.5,
+      "start_time": 5.0,
+      "effect": "ken_burns",
+      "transition": "crossfade"
+    },
+    {
+      "scene_index": 4,
+      "image_path": "C:\\Users\\wf260113\\Desktop\\rlmong\\reelmong-algorithm\\data\\output\\frames\\frame_03.jpg",
+      "narration": "연어, 육류 초밥 미쳤어!",
+      "subtitle": "연어, 육류 초밥 미쳤어!",
+      "duration": 2.5,
+      "start_time": 7.5,
+      "effect": "ken_burns",
+      "transition": "crossfade"
+    },
+    {
+      "scene_index": 5,
+      "image_path": "C:\\Users\\wf260113\\Desktop\\rlmong\\reelmong-algorithm\\data\\output\\frames\\frame_04.jpg",
+      "narration": "따끈한 튀김 이거 봐봐!",
+      "subtitle": "따끈한 튀김 이거 봐봐!",
+      "duration": 2.5,
+      "start_time": 10.0,
+      "effect": "ken_burns",
+      "transition": "crossfade"
+    },
+    {
+      "scene_index": 6,
+      "image_path": "C:\\Users\\wf260113\\Desktop\\rlmong\\reelmong-algorithm\\data\\output\\frames\\frame_05.jpg",
+      "narration": "디저트도 완벽하잖아!",
+      "subtitle": "디저트도 완벽하잖아!",
+      "duration": 2.5,
+      "start_time": 12.5,
+      "effect": "ken_burns",
+      "transition": "crossfade"
+    },
+    {
+      "scene_index": 7,
+      "image_path": "C:\\Users\\wf260113\\Desktop\\rlmong\\reelmong-algorithm\\data\\output\\frames\\frame_06.jpg",
+      "narration": "싱싱 과일 코너도 있네?",
+      "subtitle": "싱싱 과일 코너도 있네?",
+      "duration": 2.5,
+      "start_time": 15.0,
+      "effect": "ken_burns",
+      "transition": "crossfade"
+    },
+    {
+      "scene_index": 8,
+      "image_path": "C:\\Users\\wf260113\\Desktop\\rlmong\\reelmong-algorithm\\data\\output\\frames\\frame_07.jpg",
+      "narration": "아이스크림 비주얼 봐봐!",
+      "subtitle": "아이스크림 비주얼 봐봐!",
+      "duration": 2.5,
+      "start_time": 17.5,
+      "effect": "ken_burns",
+      "transition": "crossfade"
+    },
+    {
+      "scene_index": 9,
+      "image_path": "C:\\Users\\wf260113\\Desktop\\rlmong\\reelmong-algorithm\\data\\output\\frames\\frame_08.jpg",
+      "narration": "토핑 가득 아이스크림!",
+      "subtitle": "토핑 가득 아이스크림!",
+      "duration": 2.5,
+      "start_time": 20.0,
+      "effect": "ken_burns",
+      "transition": "crossfade"
+    },
+    {
+      "scene_index": 10,
+      "image_path": "C:\\Users\\wf260113\\Desktop\\rlmong\\reelmong-algorithm\\data\\output\\frames\\frame_09.jpg",
+      "narration": "오늘 저녁은 여기야!",
+      "subtitle": "오늘 저녁은 여기야!",
+      "duration": 2.5,
+      "start_time": 22.5,
+      "effect": "ken_burns",
+      "transition": "crossfade"
+    }
+  ],
+  "bgm_mood": "energetic",
+  "script_full_text": "초밥 무한 실화? 신선 초밥 라인업 봐봐! 해산물 샐러드 대박이야! 연어, 육류 초밥 미쳤어! 따끈한 튀김 이거 봐봐! 디저트도 완벽하잖아! 싱싱 과일 코너도 있네? 아이스크림 비주얼 봐봐! 토핑 가득 아이스크림! 오늘 저녁은 여기야!",
+  "hook_candidates": [
+    "이거 실화야?",
+    "여기 초밥 미쳤어!",
+    "뷔페 끝판왕 아니야?",
+    "쿠우쿠우 왔는데?",
+    "이 가격에 이게 돼?",
+    "초밥 무한 실화?",
+    "여기가 천국이야?",
+    "배 터지는 각이야!",
+    "혜자 뷔페 발견!",
+    "오늘부터 단골이야!"
+  ]
+}

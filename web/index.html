@@ -19,7 +19,11 @@
     ══════════════════════════════════════════════════ */
     .hero {
       min-height: 100vh;
-      background: #FFF8F2;
+      background:
+        radial-gradient(ellipse 70% 60% at 90% 5%, #FFD0A0 0%, transparent 60%),
+        radial-gradient(ellipse 50% 50% at 10% 90%, #FFE0C0 0%, transparent 55%),
+        radial-gradient(ellipse 60% 40% at 50% 50%, #FFF0E4 0%, transparent 70%),
+        #FFF8F2;
       position: relative;
       overflow: hidden;
       display: flex;
@@ -219,7 +223,7 @@
     .phone-card-left {
       width: 230px; height: 370px;
       bottom: 20px; left: 0;
-      background: linear-gradient(160deg, #3d2b1f 0%, #6b3a1f 50%, #4a2910 100%);
+      background: url('/web_image/pasta.png') center/cover no-repeat;
       z-index: 1;
       animation:
         card-enter-left 0.85s cubic-bezier(0.34, 1.56, 0.64, 1) 0.35s both,
@@ -230,7 +234,7 @@
     .phone-card-main {
       width: 265px; height: 460px;
       top: 0; left: 50%;
-      background: linear-gradient(160deg, #1a1208 0%, #2d1a0e 40%, #1a0f08 100%);
+      background: url('/web_image/meat.png') center/cover no-repeat;
       z-index: 3;
       animation:
         card-enter-main 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.7s both,
@@ -241,7 +245,7 @@
     .phone-card-right {
       width: 230px; height: 370px;
       bottom: 20px; right: 0;
-      background: linear-gradient(160deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      background: url('/web_image/cake.png') center/cover no-repeat;
       z-index: 1;
       animation:
         card-enter-right 0.85s cubic-bezier(0.34, 1.56, 0.64, 1) 1.05s both,
@@ -258,33 +262,7 @@
       padding: 16px;
     }
 
-    /* 음식 사진 흉내 (그라디언트 패턴) */
-    .card-food-bg {
-      position: absolute;
-      inset: 0;
-      opacity: 0.35;
-    }
-
-    .food-bg-1 {
-      background:
-        radial-gradient(circle at 30% 40%, rgba(180,120,60,0.8) 0%, transparent 50%),
-        radial-gradient(circle at 70% 60%, rgba(200,140,80,0.6) 0%, transparent 45%),
-        radial-gradient(circle at 50% 20%, rgba(220,160,80,0.5) 0%, transparent 40%);
-    }
-
-    .food-bg-2 {
-      background:
-        radial-gradient(circle at 40% 50%, rgba(180,60,30,0.9) 0%, transparent 50%),
-        radial-gradient(circle at 60% 30%, rgba(140,40,20,0.7) 0%, transparent 45%),
-        radial-gradient(circle at 30% 70%, rgba(200,80,40,0.6) 0%, transparent 40%);
-    }
-
-    .food-bg-3 {
-      background:
-        radial-gradient(circle at 50% 40%, rgba(220,180,140,0.8) 0%, transparent 50%),
-        radial-gradient(circle at 30% 60%, rgba(180,120,100,0.6) 0%, transparent 45%),
-        radial-gradient(circle at 70% 30%, rgba(200,160,120,0.5) 0%, transparent 40%);
-    }
+    .card-food-bg { display: none; }
 
     /* 카드 하단 텍스트 오버레이 */
     .card-overlay {
@@ -480,7 +458,11 @@
     }
 
     .tool-section {
-      background: var(--bg);
+      background:
+        radial-gradient(ellipse 60% 50% at 95% 15%, #FFD0A0 0%, transparent 55%),
+        radial-gradient(ellipse 50% 40% at 5% 80%, #FFE0C0 0%, transparent 50%),
+        radial-gradient(ellipse 70% 60% at 40% 50%, #FFF0E4 0%, transparent 65%),
+        #FFF8F2;
       color: var(--text);
       min-height: 100vh;
       position: relative;
@@ -517,7 +499,7 @@
     .tsub  { font-size: 12px; color: var(--muted); }
     .tbadge { margin-left: auto; font-size: 11px; padding: 3px 10px; border-radius: 20px; background: rgba(255,92,26,0.08); border: 1px solid rgba(255,92,26,0.22); color: #FF5C1A; font-weight: 600; }
 
-    .tool-container { max-width: 1120px; margin: 0 auto; padding: 36px 24px; }
+    .tool-container { max-width: 1120px; margin: 0 auto; padding: 120px 24px 36px; }
 
     .input-grid {
       display: grid;
@@ -939,50 +921,13 @@
     <div class="hero-right">
 
       <!-- 왼쪽 배경 카드 -->
-      <div class="phone-card phone-card-left">
-        <div class="card-inner">
-          <div class="card-food-bg food-bg-1"></div>
-          <div class="card-overlay"></div>
-          <div class="card-location">📍 오늘의 맛집</div>
-          <div class="card-text">
-            <div class="card-title-text">신선한 재료로 만든<br>특별한 한 접시</div>
-            <div class="card-stats">
-              <div class="card-stat">▶ 2.3만</div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div class="phone-card phone-card-left"></div>
 
       <!-- 중앙 메인 카드 -->
-      <div class="phone-card phone-card-main">
-        <div class="card-inner">
-          <div class="card-food-bg food-bg-2"></div>
-          <div class="card-overlay"></div>
-          <div class="card-location">📍 오늘의 맛집</div>
-          <div class="card-text">
-            <div class="card-title-text main">입안에서<br>살살 녹는<br>맛집!</div>
-            <div class="card-stats">
-              <div class="card-stat">❤ 1.2만</div>
-              <div class="card-stat">💬 128</div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div class="phone-card phone-card-main"></div>
 
       <!-- 오른쪽 배경 카드 -->
-      <div class="phone-card phone-card-right">
-        <div class="card-inner">
-          <div class="card-food-bg food-bg-3"></div>
-          <div class="card-overlay"></div>
-          <div class="card-location">📍 오늘의 맛집</div>
-          <div class="card-text">
-            <div class="card-title-text">눈과 입이<br>행복한 디저트</div>
-            <div class="card-stats">
-              <div class="card-stat">▶ 1.6만</div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div class="phone-card phone-card-right"></div>
 
     </div>
   </div>

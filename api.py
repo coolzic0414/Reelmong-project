@@ -18,12 +18,14 @@ import uvicorn
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(1, str(ROOT / "crol"))
 
 app = FastAPI(title="릴몽 API", version="1.0.0")
+app.mount("/web_image", StaticFiles(directory=str(ROOT / "web" / "web_image")), name="web_image")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
