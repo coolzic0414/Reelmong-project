@@ -5,9 +5,8 @@ from dotenv import load_dotenv
 _CROL_DIR = os.path.dirname(os.path.abspath(__file__))
 _ROOT_DIR = os.path.dirname(_CROL_DIR)
 
-# 루트 .env → crol/.env 순서로 로드 (루트 OpenRouter 키 공유)
+# 루트 .env 로드 (모든 API 키 통합 관리)
 load_dotenv(os.path.join(_ROOT_DIR, ".env"))
-load_dotenv(os.path.join(_CROL_DIR, ".env"))
 
 # ── API 키 ────────────────────────────────────────────────────────
 YOUTUBE_API_KEY      = os.getenv("YOUTUBE_API_KEY", "")

@@ -1,0 +1,65 @@
+2026-05-31 15:49:54 [INFO] ============================================================
+2026-05-31 15:49:54 [INFO] [START] PID=31228  python=C:\Users\wf260113\anaconda3\envs\reelmong\python.exe
+2026-05-31 15:49:54 [INFO]         cwd=C:\Users\wf260113\Desktop\rlmong\reelmong-algorithm\crol  log=C:\Users\wf260113\Desktop\rlmong\reelmong-algorithm\crol\logs\collect_2026-05-31.log
+2026-05-31 15:49:54 [INFO] [STEP] DB 초기화 시작
+2026-05-31 15:49:54 [INFO] [STEP] DB 초기화 완료 (0.0s)
+2026-05-31 15:49:54 [INFO] [STEP] 트렌드 키워드 갱신 시작
+2026-05-31 15:49:59 [INFO] [STEP] 트렌드 키워드 갱신 완료 (4.6s)
+2026-05-31 15:49:59 [INFO] [STEP] YouTube 수집 시작
+2026-05-31 15:49:59 [ERROR] [STEP] YouTube 수집 실패: YOUTUBE_API_KEY 가 설정되지 않았습니다. .env 파일을 확인하세요.
+Traceback (most recent call last):
+  File "C:\Users\wf260113\Desktop\rlmong\reelmong-algorithm\crol\collect_once.py", line 128, in step
+    result = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\wf260113\Desktop\rlmong\reelmong-algorithm\crol\collect\youtube.py", line 187, in run_collection
+    ch_ids_popular = collect_popular(snapshot_at)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\wf260113\Desktop\rlmong\reelmong-algorithm\crol\collect\youtube.py", line 122, in collect_popular
+    service, video_ids, next_page, collected = _build_service(), [], None, 0
+                                               ^^^^^^^^^^^^^^^^
+  File "C:\Users\wf260113\Desktop\rlmong\reelmong-algorithm\crol\collect\youtube.py", line 21, in _build_service
+    raise ValueError("YOUTUBE_API_KEY 가 설정되지 않았습니다. .env 파일을 확인하세요.")
+ValueError: YOUTUBE_API_KEY 가 설정되지 않았습니다. .env 파일을 확인하세요.
+2026-05-31 15:49:59 [INFO] [END] 성공 단계 2/4
+2026-05-31 15:49:59 [INFO] [BYE] ========================================================
+2026-05-31 15:55:16 [INFO] ============================================================
+2026-05-31 15:55:16 [INFO] [START] PID=11944  python=C:\Users\wf260113\anaconda3\envs\reelmong\python.exe
+2026-05-31 15:55:16 [INFO]         cwd=C:\Users\wf260113\Desktop\rlmong\reelmong-algorithm\crol  log=C:\Users\wf260113\Desktop\rlmong\reelmong-algorithm\crol\logs\collect_2026-05-31.log
+2026-05-31 15:55:16 [INFO] [STEP] DB 초기화 시작
+2026-05-31 15:55:16 [INFO] [STEP] DB 초기화 완료 (0.0s)
+2026-05-31 15:55:16 [INFO] [STEP] 트렌드 키워드 갱신 시작
+2026-05-31 15:55:16 [INFO] [STEP] 트렌드 키워드 갱신 완료 (0.0s)
+2026-05-31 15:55:16 [INFO] [STEP] YouTube 수집 시작
+2026-05-31 15:55:27 [INFO] [STEP] YouTube 수집 완료 (11.0s)
+2026-05-31 15:55:27 [INFO] [STEP] 일일 분석 시작
+2026-05-31 15:55:27 [INFO] [STEP] 일일 분석 완료 (0.0s)
+2026-05-31 15:55:27 [INFO] [END] 성공 단계 3/4
+2026-05-31 15:55:27 [INFO] [BYE] ========================================================
+2026-05-31 16:00:10 [INFO] ============================================================
+2026-05-31 16:00:10 [INFO] [START] 2026-05-31 16:00:10
+2026-05-31 16:00:10 [INFO] [INFO] 오늘 이미 269개 수집됨 (누적: 1,252개) — 재수집 진행
+2026-05-31 16:00:10 [INFO] [STEP] DB 초기화 시작
+2026-05-31 16:00:10 [INFO] [STEP] DB 초기화 완료 (0.0s)
+2026-05-31 16:00:10 [INFO] [STEP] 트렌드 키워드 갱신 시작
+2026-05-31 16:00:16 [INFO] [STEP] 트렌드 키워드 갱신 완료 (5.8s)
+2026-05-31 16:00:16 [INFO] [STEP] YouTube 수집 시작
+2026-05-31 16:00:49 [INFO] ============================================================
+2026-05-31 16:00:49 [INFO] [START] 2026-05-31 16:00:49
+2026-05-31 16:00:49 [WARNING] 이미 수집 중인 프로세스 있음 (lock age=39s) — 종료
+2026-05-31 16:00:57 [INFO] ============================================================
+2026-05-31 16:00:57 [INFO] [START] 2026-05-31 16:00:57
+2026-05-31 16:00:57 [WARNING] 이미 수집 중인 프로세스 있음 (lock age=46s) — 종료
+2026-05-31 16:01:17 [INFO] ============================================================
+2026-05-31 16:01:17 [INFO] [START] 2026-05-31 16:01:17
+2026-05-31 16:01:17 [INFO] [INFO] 오늘 이미 731개 수집됨 (누적: 1,714개) — 재수집 진행
+2026-05-31 16:01:17 [INFO] [STEP] DB 초기화 시작
+2026-05-31 16:01:17 [INFO] [STEP] DB 초기화 완료 (0.0s)
+2026-05-31 16:01:17 [INFO] [STEP] 트렌드 키워드 갱신 시작
+2026-05-31 16:01:23 [INFO] [STEP] 트렌드 키워드 갱신 완료 (5.5s)
+2026-05-31 16:01:23 [INFO] [STEP] YouTube 수집 시작
+2026-05-31 16:01:41 [INFO] [STEP] YouTube 수집 완료 (18.5s)
+2026-05-31 16:01:41 [INFO] [STEP] 일일 분석 시작
+2026-05-31 16:01:41 [INFO] [STEP] 일일 분석 완료 (0.0s)
+2026-05-31 16:01:41 [INFO] [DB] 오늘 수집: 1,193개 | 신규 추가: +462개 | 누적 총합: 2,176개
+2026-05-31 16:01:41 [INFO] [END] 성공 단계 3/4
+2026-05-31 16:01:41 [INFO] [BYE] ========================================================

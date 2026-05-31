@@ -20,8 +20,9 @@ OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 # 모델 설정
 LLM_MODEL    = "google/gemini-2.5-flash"   # 대본 생성, 이미지 요약
 VISION_MODEL = "google/gemini-2.5-flash"   # 이미지 분석 (Vision 내장)
-TTS_MODEL    = "google/gemini-3.1-flash-tts-preview"  # 한국어 음성 합성
-TTS_VOICE    = "alloy"                     # OpenRouter 기본 보이스
+TTS_MODEL       = "google/gemini-3.1-flash-tts-preview"  # 한국어 특화 TTS
+TTS_VOICE       = "Kore"     # 여성 보이스 (한국어 최적화)
+TTS_VOICE_MALE  = "Charon"   # 남성 보이스
 
 # 영상 설정
 VIDEO_WIDTH = 1080
