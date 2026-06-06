@@ -861,6 +861,176 @@
       .tool-header { padding: 0 16px; }
       .tool-container { padding: 20px 16px; }
     }
+
+    /* ══ 촬영 가이드 ══════════════════════════════════════ */
+    .guide-toggle-wrap {
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .guide-toggle-btn {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 20px;
+      background: white;
+      border: 1.5px solid var(--border);
+      border-radius: 50px;
+      font-size: 14px; font-weight: 700; color: var(--text);
+      cursor: pointer; font-family: inherit;
+      transition: all 0.2s;
+      box-shadow: 0 2px 8px rgba(180,100,40,0.07);
+    }
+    .guide-toggle-btn:hover { border-color: var(--pri); color: var(--pri); box-shadow: 0 4px 14px rgba(255,92,26,0.13); }
+    .guide-toggle-btn .arrow { transition: transform 0.3s; font-style: normal; }
+    .guide-toggle-btn.open .arrow { transform: rotate(180deg); }
+    .guide-mobile-badge {
+      font-size: 11px; font-weight: 700;
+      background: rgba(255,92,26,0.1); color: var(--pri);
+      border-radius: 20px; padding: 3px 10px;
+      border: 1px solid rgba(255,92,26,0.2);
+    }
+
+    .guide-section {
+      display: none;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 12px rgba(180,100,40,0.06);
+    }
+    .guide-section.open { display: block; }
+
+    .guide-title {
+      font-size: 15px; font-weight: 800; color: var(--text);
+      margin-bottom: 4px;
+    }
+    .guide-desc {
+      font-size: 13px; color: var(--muted);
+      margin-bottom: 20px;
+    }
+
+    .guide-steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    @media (max-width: 768px) {
+      .guide-steps { grid-template-columns: 1fr 1fr; }
+    }
+
+    .guide-step-card {
+      border: 1.5px solid var(--border);
+      border-radius: var(--rs);
+      padding: 16px;
+      position: relative;
+      transition: all 0.25s;
+      background: #FFFAF6;
+    }
+    .guide-step-card.active { border-color: var(--pri); background: #FFF8F2; box-shadow: 0 4px 16px rgba(255,92,26,0.1); }
+    .guide-step-card.done { border-color: #16a34a; background: #f0fdf4; }
+
+    .guide-step-num {
+      font-size: 11px; font-weight: 800; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .guide-step-name {
+      font-size: 14px; font-weight: 800; color: var(--text);
+      margin-bottom: 4px;
+    }
+    .guide-step-tip {
+      font-size: 11px; color: var(--muted);
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+    .guide-step-counter {
+      font-size: 12px; font-weight: 700;
+      color: var(--pri); margin-bottom: 10px;
+    }
+    .guide-step-card.done .guide-step-counter { color: #16a34a; }
+
+    .guide-check {
+      position: absolute; top: 10px; right: 10px;
+      width: 22px; height: 22px;
+      background: #16a34a; border-radius: 50%;
+      display: none; align-items: center; justify-content: center;
+      color: white; font-size: 12px; font-weight: 900;
+    }
+    .guide-step-card.done .guide-check { display: flex; }
+
+    .btn-record {
+      width: 100%;
+      padding: 8px;
+      background: linear-gradient(135deg, #FF5C1A, #FF8C5A);
+      border: none; border-radius: var(--rx);
+      color: white; font-size: 12px; font-weight: 800;
+      cursor: pointer; font-family: inherit;
+      transition: all 0.2s;
+    }
+    .btn-record:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(255,92,26,0.3); }
+    .btn-record:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .btn-record.recording {
+      background: linear-gradient(135deg, #dc2626, #ef4444);
+      animation: pulse-rec 1.2s ease-in-out infinite;
+    }
+    @keyframes pulse-rec {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.4); }
+      50%       { box-shadow: 0 0 0 6px rgba(220,38,38,0); }
+    }
+
+    .guide-pc-notice {
+      text-align: center; padding: 20px;
+      color: var(--muted); font-size: 13px;
+    }
+    .guide-pc-notice span { font-size: 28px; display: block; margin-bottom: 8px; }
+
+    /* 카메라 오버레이 */
+    .camera-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: black;
+      z-index: 9999;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .camera-overlay.open { display: flex; }
+    .camera-preview {
+      width: 100%; max-width: 480px;
+      aspect-ratio: 9/16;
+      object-fit: cover;
+      border-radius: 12px;
+    }
+    .camera-controls {
+      margin-top: 24px;
+      display: flex; gap: 20px; align-items: center;
+    }
+    .btn-cam-close {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      border: 2px solid rgba(255,255,255,0.4);
+      color: white; font-size: 20px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .btn-cam-record {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: #ef4444;
+      border: 4px solid white;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-cam-record.recording {
+      background: white;
+      box-shadow: 0 0 0 4px #ef4444;
+      border-radius: 12px;
+      width: 40px; height: 40px;
+    }
+    .camera-step-label {
+      color: white; font-size: 14px; font-weight: 700;
+      margin-bottom: 16px; text-align: center;
+      background: rgba(0,0,0,0.4); padding: 8px 20px; border-radius: 20px;
+    }
   </style>
 </head>
 <body>
@@ -960,6 +1130,39 @@
   </header>
 
   <div class="tool-container">
+
+    <!-- 촬영 가이드 토글 -->
+    <div class="guide-toggle-wrap">
+      <button class="guide-toggle-btn" id="guide-toggle-btn" onclick="toggleGuide()">
+        📱 모바일 촬영 가이드
+        <em class="arrow">▾</em>
+      </button>
+      <span class="guide-mobile-badge">모바일 전용</span>
+    </div>
+
+    <!-- 촬영 가이드 섹션 -->
+    <div class="guide-section" id="guide-section">
+      <div class="guide-title">📽️ 이렇게 찍으면 완성도가 올라가요</div>
+      <div class="guide-desc">단계별로 촬영하고, 완료되면 자동으로 업로드 목록에 추가됩니다.</div>
+
+      <div id="guide-steps-wrap"></div>
+
+      <div class="guide-pc-notice" id="guide-pc-notice" style="display:none">
+        <span>💻</span>
+        PC에서는 직접 촬영이 어렵습니다.<br>
+        모바일로 찍은 영상을 위의 업로드 영역에 넣어주세요.
+      </div>
+    </div>
+
+    <!-- 카메라 오버레이 -->
+    <div class="camera-overlay" id="camera-overlay">
+      <div class="camera-step-label" id="camera-step-label">촬영 중</div>
+      <video class="camera-preview" id="camera-preview" autoplay muted playsinline></video>
+      <div class="camera-controls">
+        <button class="btn-cam-close" onclick="closeCamera()">✕</button>
+        <button class="btn-cam-record" id="btn-cam-record" onclick="toggleRecord()"></button>
+      </div>
+    </div>
 
     <!-- 입력 그리드 -->
     <div class="input-grid" id="input-grid">
@@ -1158,6 +1361,114 @@
 
 <script>
   let files = [], currentJobId = null, es = null, logOpen = false, storyboardScenes = [];
+
+  /* ── 촬영 가이드 ──────────────────────────────────────── */
+  const GUIDE_STEPS = [
+    { id: 1, name: '매장 입구',      tip: '간판과 외관이 잘 보이게\n천천히 가로로 이동하며 촬영', need: 1 },
+    { id: 2, name: '매장 내부',      tip: '인테리어·분위기가 느껴지도록\n입구에서 안쪽으로 천천히 이동', need: 1 },
+    { id: 3, name: '메인 메뉴',      tip: '음식 앞에서 천천히 앞으로 이동\n5가지 메뉴를 각각 따로 촬영', need: 5 },
+    { id: 4, name: '대표메뉴 / 후식', tip: '가장 자랑하고 싶은 메뉴를\n가까이 클로즈업으로 촬영', need: 1 },
+  ];
+  const guideCount = [0, 0, 0, 0]; // 단계별 녹화 완료 수
+  let activeStep = 0;
+  let mediaStream = null, mediaRecorder = null, recordedChunks = [], recordingStep = -1;
+
+  const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+
+  function toggleGuide() {
+    const btn = document.getElementById('guide-toggle-btn');
+    const sec = document.getElementById('guide-section');
+    const open = sec.classList.toggle('open');
+    btn.classList.toggle('open', open);
+    if (open) renderGuideSteps();
+  }
+
+  function renderGuideSteps() {
+    const wrap = document.getElementById('guide-steps-wrap');
+    const pcNotice = document.getElementById('guide-pc-notice');
+
+    if (!isMobile) {
+      wrap.innerHTML = '';
+      pcNotice.style.display = 'block';
+      return;
+    }
+    pcNotice.style.display = 'none';
+
+    wrap.innerHTML = `<div class="guide-steps">${GUIDE_STEPS.map((s, i) => {
+      const done = guideCount[i] >= s.need;
+      const isActive = i === activeStep && !done;
+      const cnt = guideCount[i];
+      return `
+        <div class="guide-step-card ${done ? 'done' : isActive ? 'active' : ''}" id="gstep-${i}">
+          <div class="guide-check">✓</div>
+          <div class="guide-step-num">STEP ${s.id}</div>
+          <div class="guide-step-name">${s.name}</div>
+          <div class="guide-step-tip">${s.tip.replace(/\n/g,'<br>')}</div>
+          <div class="guide-step-counter">${done ? `✅ ${s.need}개 완료` : `${cnt} / ${s.need}개`}</div>
+          <button class="btn-record ${done ? '' : ''}"
+            onclick="openCamera(${i})"
+            ${done ? 'disabled' : ''}>
+            ${done ? '완료' : isActive ? '🔴 촬영하기' : '촬영하기'}
+          </button>
+        </div>`;
+    }).join('')}</div>`;
+  }
+
+  async function openCamera(stepIdx) {
+    try {
+      mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: true });
+      const preview = document.getElementById('camera-preview');
+      preview.srcObject = mediaStream;
+      document.getElementById('camera-step-label').textContent =
+        `STEP ${GUIDE_STEPS[stepIdx].id} · ${GUIDE_STEPS[stepIdx].name}`;
+      recordingStep = stepIdx;
+      recordedChunks = [];
+      document.getElementById('camera-overlay').classList.add('open');
+    } catch(e) {
+      alert('카메라 권한을 허용해주세요.');
+    }
+  }
+
+  function closeCamera() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+    if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+    mediaStream = null;
+    document.getElementById('camera-overlay').classList.remove('open');
+    document.getElementById('btn-cam-record').classList.remove('recording');
+  }
+
+  function toggleRecord() {
+    const btn = document.getElementById('btn-cam-record');
+    if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+      // 녹화 시작
+      recordedChunks = [];
+      mediaRecorder = new MediaRecorder(mediaStream, { mimeType: 'video/webm;codecs=vp9' });
+      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+      mediaRecorder.onstop = () => saveRecording();
+      mediaRecorder.start();
+      btn.classList.add('recording');
+    } else {
+      // 녹화 중지
+      mediaRecorder.stop();
+      btn.classList.remove('recording');
+    }
+  }
+
+  function saveRecording() {
+    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+    const step = GUIDE_STEPS[recordingStep];
+    const filename = `step${step.id}_${step.name}_${guideCount[recordingStep]+1}.webm`;
+    const file = new File([blob], filename, { type: 'video/webm' });
+
+    guideCount[recordingStep]++;
+    addFiles([file]); // 기존 업로드 시스템에 추가
+
+    const done = guideCount[recordingStep] >= step.need;
+    if (done && recordingStep < GUIDE_STEPS.length - 1) activeStep = recordingStep + 1;
+
+    closeCamera();
+    renderGuideSteps(); // UI 갱신
+  }
 
   /* 파일 업로드 */
   const dropZone  = document.getElementById('drop-zone');

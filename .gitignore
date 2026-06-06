@@ -5,11 +5,18 @@ __pycache__/
 
 # 결과물 (로컬에서만 생성)
 data/output/
+data/jobs/
 data/bgm/**/*.mp3
 data/bgm/**/*.wav
 data/images/*
 !data/images/.gitkeep
 !data/bgm/**/.gitkeep
+
+# 로그
+crol/logs/
+crol/*.bak
+crol/backfill_progress.json
+crol/.backfill_done_*
 
 # crol 런타임 데이터
 crol/crol.db
